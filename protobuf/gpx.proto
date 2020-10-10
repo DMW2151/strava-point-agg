@@ -1,0 +1,21 @@
+syntax="proto3";
+
+package main;
+
+message ActivityPB {
+    uint64 Id = 1;
+    Athlete athlete = 2;
+    Map map = 3;
+    string startdttm = 4; 
+    string type = 5; 
+    string device = 6; 
+};
+
+message Athlete {
+    int64 id = 1;
+}
+
+message Map {
+    string polyline = 1;
+    string summarypolyline = 2; 
+}

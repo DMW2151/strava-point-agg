@@ -1,0 +1,9 @@
+time="2020-10-09T21:18:18-04:00" level=error msg="Bad request to Strava Token API" func=main.GetUserAccessToken file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:218" requestURL="https://www.strava.com/oauth/token" statusCode=400
+time="2020-10-09T21:18:18-04:00" level=info msg="Set value in Cache" func="main.(*Memcache).writeTokenCache" file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:77" AthleteID=0
+time="2020-10-09T21:19:16-04:00" level=error msg="Bad request to Strava Token API" func=main.GetUserAccessToken file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:219" requestURL="https://www.strava.com/oauth/token" statusCode=400
+time="2020-10-09T21:19:16-04:00" level=info msg="Set value in Cache" func="main.(*Memcache).writeTokenCache" file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:77" AthleteID=0
+time="2020-10-09T21:19:43-04:00" level=info msg="Set value in Cache" func="main.(*Memcache).writeTokenCache" file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:77" AthleteID=25591100
+time="2020-10-09T21:23:27-04:00" level=info msg="Set value in Cache" func="main.(*Memcache).writeTokenCache" file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:77" AthleteID=25591100
+time="2020-10-09T21:30:50-04:00" level=info msg="Set value in Cache" func="main.(*Memcache).writeTokenCache" file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:77" AthleteID=25591100
+time="2020-10-09T21:33:36-04:00" level=info msg="Set value in Cache" func="main.(*Memcache).writeTokenCache" file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:77" AthleteID=25591100
+time="2020-10-09T23:22:19-04:00" level=info msg="Set value in Cache" func="main.(*Memcache).writeTokenCache" file="/Users/dustinwilson/Desktop/Personal/gpx/tailwinds/authutils.go:77" AthleteID=25591100
