@@ -39,7 +39,8 @@ jobs:
       run: cd ./lambda/deploy && zip ./function.zip main
 
     - name: Deploy Function
-      run: | 
+      run: |
+        export AWS_DEFAULT_REGION=us-east-1 &&\
         cd ./lambda/deploy &&\
           aws lambda update-function-code \
             --function-name DataProcess \
