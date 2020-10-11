@@ -39,4 +39,8 @@ jobs:
       run: cd ./lambda/deploy && zip ./function.zip main
 
     - name: Deploy Function
-      run: aws lambda update-function-code --function-name DataProcess --zip-file fileb://function.zip
+      run: | 
+        cd ./lambda/deploy &&\
+          aws lambda update-function-code \
+            --function-name DataProcess \
+            --zip-file fileb://function.zip
