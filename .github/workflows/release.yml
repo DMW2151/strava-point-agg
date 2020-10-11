@@ -1,0 +1,21 @@
+name: ReleaseCI
+on:
+  push:
+    branches:
+      - sansserver
+
+jobs:
+
+  # Build ./lambda/** code and update function.zip
+  deploy_dataproc:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    steps:
+    - id: compile_dataproc_func
+      run: GOOS=linux go build -o ./lambda/deploy/main main.go token.go
+    - id: zip_dataproc_func
+      run: cd ./lambda/deploy && zip ./function.zip main
+    - id: deploy_update_dataproc_func
+      run: aws lambda update-function-code --function-name DataProcess --zip-file fileb://function.zip

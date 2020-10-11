@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/gorilla/securecookie"
@@ -23,7 +27,7 @@ var s = securecookie.New(hashKey, nil)
 const targetScope = "activity:read"
 
 func init() {
-	tpl = template.Must(template.ParseGlob("templates/*"))
+	tpl = template.Must(template.ParseGlob("./templates/*"))
 }
 
 // index - Handler for Index Page...
@@ -32,12 +36,12 @@ func index(w http.ResponseWriter, req *http.Request) {
 	tpl.ExecuteTemplate(w, "index.html", nil)
 }
 
-// ManualAuth - Handler for `/exchange_token` route
+// manualAuth - Handler for `/exchange_token` route
 //
 // User manually grants access to application
 // Redirects to `/exchange_token` w. code embeded in URL
 // code is echanged for a short-lived user access_token`
-func ManualAuth(w http.ResponseWriter, req *http.Request) {
+func manualAuth(w http.ResponseWriter, req *http.Request) {
 
 	// Parse url and extract `code` param
 	scope, hasScope := getHTTPParam(req, "scope")
@@ -86,7 +90,41 @@ func ManualAuth(w http.ResponseWriter, req *http.Request) {
 	http.Redirect(w, req, "/download", http.StatusSeeOther)
 }
 
-func downloadUserActivities(w http.ResponseWriter, req *http.Request) {
+func sendLambdaRequest(authtoken Token) {
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	// Prepare request and add headers; string format value for
+	// page (page number) and per_page (results per page)
+	fmt.Println(authtoken)
+
+	b, _ := json.Marshal(authtoken)
+
+	req, _ := http.NewRequest(
+		"POST",
+		os.Getenv("AWS_LAMBDA_PROC_ENDOINT"),
+		bytes.NewBuffer(b),
+	)
+
+	req.Header.Add("Accept", "application/json")
+
+	// Execute request
+	_, err := client.Do(req)
+
+	if err != nil { // On HTTP Error...
+		fmt.Println(err)
+		// Log Generic HTTP Error
+		log.WithFields(
+			log.Fields{"Req": req.URL},
+		).Warn(
+			"Could not execute HTTP request to %v, %e", os.Getenv("AWS_LAMBDA_PROC_ENDOINT"), err,
+		)
+	}
+
+}
+
+// queueDownloadRequest
+func queueDownloadRequest(w http.ResponseWriter, req *http.Request) {
 
 	var value string
 
@@ -94,6 +132,7 @@ func downloadUserActivities(w http.ResponseWriter, req *http.Request) {
 	if c, err := req.Cookie("AthleteID"); err == nil {
 		s.Decode("AthleteID", c.Value, &value)
 	} else {
+		// NOTE: LOG!!
 		http.Error(w, http.StatusText(400), http.StatusBadRequest)
 		return
 	}
@@ -102,7 +141,9 @@ func downloadUserActivities(w http.ResponseWriter, req *http.Request) {
 	t, err := mc.readTokenCache(value)
 	if err != nil {
 		// Returned No token; need to ask for auth again!!
+		// NOTE: LOG!!
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	if !t.isValid() {
@@ -110,19 +151,20 @@ func downloadUserActivities(w http.ResponseWriter, req *http.Request) {
 		t, err = refreshTokenCache(t, mc)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 
-	// Run Async Activities...
-	AsyncGetActivities(t)
-	tpl.ExecuteTemplate(w, "Success.html", nil)
+	// Send to Lambda...
+	tpl.ExecuteTemplate(w, "downloading.html", nil)
+	sendLambdaRequest(t)
 	return
 }
 
 func main() {
 
 	// Configure Logging...
-	file, err := os.OpenFile("dload.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) // For read access.
+	file, err := os.OpenFile("./logs/dload.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) // For read access.
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,8 +175,8 @@ func main() {
 
 	// Add routes to serve home and download pages
 	http.HandleFunc("/", index)
-	http.HandleFunc("/exchange_token", ManualAuth)
-	http.HandleFunc("/download", downloadUserActivities)
+	http.HandleFunc("/exchange_token", manualAuth)
+	http.HandleFunc("/download", queueDownloadRequest)
 	http.Handle("/favicon.ico", http.NotFoundHandler())
 	http.ListenAndServe(":8080", nil)
 

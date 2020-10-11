@@ -2,10 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	fmt "fmt"
 	"io/ioutil"
 	"os"
-	"unsafe"
 
 	proto "github.com/golang/protobuf/proto"
 )
@@ -43,7 +41,6 @@ func main() {
 	// Original
 	byteValue, _ := ioutil.ReadAll(f)
 	json.Unmarshal(byteValue, &activity)
-	fmt.Println(activity)
 
 	// As PB
 	activitypb := &ActivityPB{
@@ -60,10 +57,6 @@ func main() {
 		Device:    activity.Device,
 	}
 
-	data, _ := proto.Marshal(activitypb)
-	fmt.Println(data)
-
-	fmt.Printf("PB size: %d\n", unsafe.Sizeof(data))
-	fmt.Printf("JSON OBJ size: %d\n", unsafe.Sizeof(activity))
+	_, _ = proto.Marshal(activitypb)
 
 }

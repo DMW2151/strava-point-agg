@@ -22,30 +22,6 @@ type Memcache struct {
 	db *memcache.Client // mc := memcache.New("127.0.0.1:11211", "10.0.0.2:11211", "10.0.0.3:11212")
 }
 
-// Token - Contains data from response of https://www.strava.com/oauth/token
-// Passed w. all requests to Strava API, note that different activities
-// require different scopes
-// Example Response:
-// {
-// "token_type": "Bearer",
-// "expires_at": <UNIXTIME>,
-// "expires_in": <UINT64>,
-// "refresh_token": <base64 string>,
-// "access_token": <base64 string>,
-// "athlete": {
-// "id": 25591100,
-// <NON_EXPORTED FIELDS>
-// }
-// }
-type Token struct {
-	Athlete struct {
-		ID int `json:"id"`
-	} `json:"athlete"`
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresAt    int64  `json:"expires_at"`
-}
-
 // writeTokenCache - Send a Token to the cache
 func (cache *Memcache) writeTokenCache(t Token) (err error) {
 
@@ -153,12 +129,6 @@ func refreshTokenCache(origToken Token, cache Memcache) (token Token, err error)
 
 	_ = cache.writeTokenCache(token)
 	return token, nil
-}
-
-// isNotExpired - Check if token is expired or not...
-func (t *Token) isValid() bool {
-	expirationTime := time.Unix(t.ExpiresAt, 0).UTC()
-	return time.Now().UTC().Before(expirationTime)
 }
 
 // GetUserAccessToken - Make a POST request to the Strava API
