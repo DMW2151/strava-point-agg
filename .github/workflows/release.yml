@@ -24,14 +24,14 @@ jobs:
       run: |
         go get -u github.com/aws/aws-lambda-go/events github.com/aws/aws-lambda-go/lambda golang.org/x/lint/golint
 
-    - name: Run vet & lint
-      run: |
-        go vet .
-        golint .
-    
-    - name: Build
+    - name: Check
       run: tree
 
+    - name: Run vet & lint
+      run: |
+        go vet ./lambda
+        golint ./lambda
+    
     - name: Build
       run: GOOS=linux go build -o ./lambda/deploy/main ./lambda/main.go ./lambda/token.go
 
