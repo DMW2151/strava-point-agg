@@ -13,9 +13,22 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
-    - id: compile_dataproc_func
-      run: GOOS=linux go build -o ./lambda/deploy/main main.go token.go
-    - id: zip_dataproc_func
+    
+    # Setup Go...
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.12.6' # The Go version to download (if necessary) and use.
+    
+    - name: Install dependencies
+      run: |
+        go get -u github.com/aws/aws-lambda-go/events github.com/aws/aws-lambda-go/lambda
+      
+    - name: Build
+      run: GOOS=linux go build -o ./lambda/deploy/main ./lambda/main.go ./lambda/token.go
+
+    - name: Zip Function
       run: cd ./lambda/deploy && zip ./function.zip main
-    - id: deploy_update_dataproc_func
+
+    - id: Deploy Function
       run: aws lambda update-function-code --function-name DataProcess --zip-file fileb://function.zip
