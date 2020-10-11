@@ -25,7 +25,7 @@ jobs:
         go get -u github.com/aws/aws-lambda-go/events github.com/aws/aws-lambda-go/lambda golang.org/x/lint/golint
 
     - name: Check
-      run: tree
+      run: ls
 
     - name: Run vet & lint
       run: |
