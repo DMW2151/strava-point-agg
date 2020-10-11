@@ -16,7 +16,7 @@ jobs:
     
     - name: Clone 
       uses: actions/checkout@v2
-      
+
     # Setup Go...
     - name: Setup Go
       uses: actions/setup-go@v2
@@ -25,7 +25,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        go get -u github.com/aws/aws-lambda-go/events github.com/aws/aws-lambda-go/lambda golang.org/x/lint/golint
+        go get -u github.com/aws/aws-lambda-go/events github.com/aws/aws-lambda-go/lambda "github.com/sirupsen/logrus" golang.org/x/lint/golint
 
     - name: Run vet & lint
       run: |
