@@ -2,7 +2,7 @@ name: ReleaseCI
 on:
   push:
     branches:
-      - sansserver
+      - master
 
 jobs:
 

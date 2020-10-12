@@ -15,9 +15,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// NOTE: For Testing: Download the First `numPages`
-// of a user's activities
-const numPages = 2
+const resultPerPage = 50
 
 // Activity - Type to Serialize Activity Data from JSON
 type Activity struct {
@@ -40,6 +38,22 @@ type Activity struct {
 	// Only recorded in response from /v3/activities/{id}
 	Type   string `json:"type"`
 	Device string `json:"device_name"`
+}
+
+// Statistics - Type to Serialize Result from
+// },
+// "all_run_totals": {
+//   "count": 197,
+//   "distance": 2975036,
+//   "moving_time": 752989,
+//   "elapsed_time": 767271,
+//   "elevation_gain": 22426
+// },
+type Statistics struct {
+	// allRuntotals - Strava User ID activity owner
+	AllRunTotals struct {
+		Count int `json:"count"`
+	} `json:"all_run_totals"`
 }
 
 // encodedactivity - Type to pass Strava objects w. an activityID
@@ -140,6 +154,54 @@ func explicitRouter(ctx context.Context, request events.APIGatewayProxyRequest) 
 
 }
 
+// getTotalActivitiesCt -
+func getTotalActivitiesCt(authtoken Token) int {
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	req, _ := http.NewRequest("GET",
+		fmt.Sprintf(
+			"https://www.strava.com/api/v3/athletes/%v/stats", authtoken.Athlete.ID,
+		), nil,
+	)
+
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("authorization", fmt.Sprintf("Bearer %v", authtoken.AccessToken))
+
+	// Execute request
+	resp, err := client.Do(req)
+
+	if err != nil { // On HTTP Error...
+		// Log Generic HTTP Error
+		log.WithFields(log.Fields{
+			"Req": req.URL,
+		}).Fatalf(
+			"Could not execute HTTP request to https://www.strava.com/api/v3/athletes/%v/stats, %e", authtoken.Athlete.ID, err)
+	}
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+
+		log.WithFields(log.Fields{
+			"statusCode": resp.StatusCode,
+		}).Fatalf(
+			"Returned NON-200 status code on request to  https://www.strava.com/api/v3/athletes/%v/stats, %e", authtoken.Athlete.ID, err)
+	}
+
+	// JSON -> Go Object: Unmarshal API response to []activity{}
+	var stats Statistics
+	err = json.Unmarshal(content, &stats)
+	if err != nil {
+		log.Fatalf(
+			"Unmarshal Error: Failed to unmarshal response from `./v3/athletes/%v/stats`: %e",
+			authtoken.Athlete, err,
+		)
+	}
+
+	return stats.AllRunTotals.Count
+
+}
+
 // AsyncGetActivities - func(context.Context, TIn) error
 func AsyncGetActivities(ctx context.Context, request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 
@@ -147,13 +209,15 @@ func AsyncGetActivities(ctx context.Context, request events.APIGatewayProxyReque
 	var wg sync.WaitGroup // Create a synchronizing WorkGroup for API Calls
 
 	_ = json.Unmarshal([]byte(request.Body), &auth)
-	log.Info(auth)
+
+	numActivities := getTotalActivitiesCt(auth) // NOTE: probably want to error check here...
+	numPages := (numActivities / resultPerPage) + 1
 
 	activityChan := make(chan encodedactivity)
 	errorChan := make(chan error, 1)
 
 	// NOTE: FIX THIS TO CALL THE TOTAL STATS FOR A USER
-	for pgNum := 1; pgNum < numPages; pgNum++ {
+	for pgNum := 1; pgNum <= numPages; pgNum++ {
 		// NOTE: This is Scuffed, but Very rarely does this result in more than 20 Goroutines...
 		wg.Add(1)
 		go getActivityHistory(pgNum, auth, activityChan, errorChan, &wg)
